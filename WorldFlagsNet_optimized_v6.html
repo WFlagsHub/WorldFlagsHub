@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="description" content="WorldFlagsNet에서 세계 여러 나라와 지역의 국기, 수도, 대륙 정보를 쉽고 빠르게 찾아보세요. 검색, 대륙별 필터, 국기 퀴즈를 제공합니다.">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <meta name="theme-color" content="#0f172a">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="WorldFlagsNet — 세계 국기 목록">
+    <meta property="og:description" content="세계의 국기와 수도를 검색하고 국기 퀴즈로 학습해 보세요.">
+    <title>WorldFlagsNet — 세계 국기 목록</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #2563eb;
+            --accent: #ef4444;
+            --success: #10b981;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+        }
+
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Malgun Gothic', sans-serif; background-color: var(--bg); margin: 0; padding: 0; color: #334155; }
+        
+        nav { background-color: #020617; display: flex; justify-content: space-between; align-items: center; padding: 0 1.5rem; border-bottom: 1px solid #1e293b; position: sticky; top: 0; z-index: 900; }
+        .nav-links { display: flex; gap: 5px; }
+        .nav-btn { background: none; border: none; color: #94a3b8; padding: 1.1rem 1.2rem; font-size: 0.98rem; font-weight: bold; cursor: pointer; transition: all 0.2s; border-bottom: 3px solid transparent; }
+        .nav-btn:hover { color: white; }
+        .nav-btn.active { color: #38bdf8; border-bottom-color: #38bdf8; background: rgba(56, 189, 248, 0.08); }
+
+        .lang-select { background: #1e293b; color: #f8fafc; border: 1px solid #334155; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; cursor: pointer; outline: none; }
+        .lang-select:hover { background: #334155; }
+
+        header { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); color: white; text-align: center; padding: 2rem 1rem 1.5rem 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        header h1 { margin: 0 0 1rem 0; font-size: 2.2rem; letter-spacing: -0.5px; }
+        
+        .search-container { display: flex; justify-content: center; gap: 10px; max-width: 650px; margin: 0 auto 1rem auto; padding: 0 1rem; }
+        #search-input { width: 100%; padding: 0.85rem 1.3rem; border-radius: 30px; border: none; outline: none; font-size: 1.02rem; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        
+        .filter-container { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; max-width: 1200px; margin: 0 auto; padding: 0.5rem 1rem; }
+        .filter-btn { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 0.83rem; transition: all 0.2s; }
+        .filter-btn:hover, .filter-btn.active { background: white; color: var(--primary); font-weight: bold; }
+
+        .status-bar { text-align: center; margin: 1.2rem 0 0.5rem 0; color: #64748b; font-size: 0.95rem; font-weight: 500; }
+
+        .container { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; padding: 1.5rem 2rem; max-width: 1450px; margin: 0 auto; }
+
+        .card { background-color: transparent; width: 100%; height: 165px; perspective: 1000px; cursor: pointer; }
+        .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); transform-style: preserve-3d; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+        .card.flipped .card-inner { transform: rotateY(180deg); }
+        .card-front, .card-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; background-color: var(--card-bg); border: 1px solid #e2e8f0; }
+        
+        .card-front img { width: 100%; height: 70%; object-fit: cover; border-bottom: 1px solid #f1f5f9; background-color: #f8fafc; }
+        .card-front h3 { margin: 0; height: 30%; display: flex; align-items: center; justify-content: center; font-size: 0.88rem; color: #1e293b; padding: 0 5px; word-break: keep-all; }
+        
+        .card-back { background-color: #f8fafc; transform: rotateY(180deg); padding: 12px; }
+        .card-back .continent-tag { font-size: 0.72rem; background: #e2e8f0; color: #475569; padding: 3px 8px; border-radius: 10px; margin-bottom: 8px; font-weight: 600; }
+        .card-back h4 { margin: 0; font-size: 0.78rem; color: #64748b; font-weight: normal; }
+        .card-back .capital { font-size: 1.05rem; font-weight: bold; margin: 5px 0 0 0; color: var(--accent); word-break: keep-all; }
+
+        /* 퀴즈 모드 스타일 */
+        .quiz-wrapper { max-width: 680px; margin: 2rem auto; padding: 0 1rem; display: none; }
+        .quiz-card { background: white; border-radius: 20px; padding: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; text-align: center; }
+        
+        .difficulty-selector { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 1.5rem; }
+        .diff-btn { padding: 1.1rem 1rem; border-radius: 14px; border: 2px solid #e2e8f0; background: #f8fafc; font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .diff-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.05); }
+        .diff-btn.easy { border-color: #10b981; color: #047857; }
+        .diff-btn.medium { border-color: #3b82f6; color: #1d4ed8; }
+        .diff-btn.hard { border-color: #f59e0b; color: #b45309; }
+        .diff-btn.expert { border-color: #ef4444; color: #b91c1c; background: #fff5f5; }
+
+        .quiz-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; color: #64748b; font-weight: 600; font-size: 0.95rem; }
+        .quiz-progress { height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; margin-bottom: 1.5rem; }
+        .quiz-progress-fill { height: 100%; background: var(--secondary); width: 0%; transition: width 0.3s; }
+
+        .flag-display { width: 100%; max-width: 280px; height: 170px; margin: 0 auto 1.5rem auto; border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: 0 6px 15px rgba(0,0,0,0.12); object-fit: cover; background-color: #f1f5f9; }
+        
+        .options-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .option-btn { background: #f1f5f9; border: 2px solid #e2e8f0; padding: 1rem 0.6rem; border-radius: 14px; font-size: 0.95rem; font-weight: bold; cursor: pointer; color: #1e293b; transition: all 0.2s; word-break: keep-all; }
+        .option-btn:hover:not([disabled]) { background: #e2e8f0; border-color: #cbd5e1; }
+        .option-btn.correct { background: #d1fae5 !important; border-color: #10b981 !important; color: #065f46 !important; }
+        .option-btn.wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b !important; }
+
+        .quiz-feedback { margin-top: 1.2rem; min-height: 40px; font-weight: bold; font-size: 1rem; }
+        .next-btn { background: var(--secondary); color: white; border: none; padding: 0.85rem 2.2rem; border-radius: 25px; font-size: 1rem; font-weight: bold; cursor: pointer; margin-top: 1rem; display: none; box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3); }
+        .next-btn:hover { background-color: #1d4ed8; }
+        
+        .no-results { grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; color: #64748b; font-size: 1.1rem; }
+        .info-section { max-width: 1100px; margin: 2rem auto 1rem; padding: 0 1rem; }
+        .info-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 18px; padding: 1.5rem 1.7rem; box-shadow: 0 4px 14px rgba(15,23,42,.05); }
+        .info-card h2 { margin: 0 0 .7rem; color: #0f172a; font-size: 1.35rem; }
+        .info-card p { line-height: 1.75; margin: .45rem 0; color: #475569; }
+        .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 1rem; }
+        .info-grid > div { background: #f8fafc; border-radius: 12px; padding: 1rem; }
+        .info-grid h3 { margin: 0 0 .35rem; font-size: .98rem; color: #1e293b; }
+        .site-footer { max-width: 1100px; margin: 2rem auto 0; padding: 1.5rem 1rem 2.5rem; border-top: 1px solid #e2e8f0; color: #64748b; text-align: center; font-size: .88rem; line-height: 1.7; }
+        .site-footer nav { display: flex; justify-content: center; gap: 16px; background: transparent; border: 0; padding: 0; position: static; }
+        .site-footer a { color: #475569; text-decoration: underline; }
+        @media (max-width: 700px) { .info-grid { grid-template-columns: 1fr; } .container { padding: 1rem; gap: 12px; } header h1 { font-size: 1.8rem; } }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+
+    </style>
+    <script type="application/ld+json">
+    {
+      "@context":"https://schema.org",
+      "@type":"WebSite",
+      "name":"WorldFlagsNet",
+      "description":"세계 국기, 수도, 대륙 정보를 검색하고 국기 퀴즈로 학습하는 웹사이트",
+      "inLanguage":["ko","en","es","zh"]
+    }
+    </script>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-links">
+            <button class="nav-btn active" id="nav-search" onclick="switchTab('search')">🌐 백과사전</button>
+            <button class="nav-btn" id="nav-quiz" onclick="switchTab('quiz')">🎮 국기 퀴즈</button>
+        </div>
+        <select class="lang-select" id="lang-selector" onchange="changeLanguage(this.value)">
+            <option value="ko">🇰🇷 한국어</option>
+            <option value="en">🇺🇸 English</option>
+            <option value="es">🇪🇸 Español</option>
+            <option value="zh">🇨🇳 中文</option>
+        </select>
+    </nav>
+
+    <!-- 1. 백과사전 모드 -->
+    <div id="search-view">
+        <header>
+            <h1 id="ui-title">WorldFlagsNet</h1>
+            
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="국가명, 수도, 섬 이름 검색...">
+            </div>
+
+            <div class="filter-container">
+                <button class="filter-btn active" id="btn-all" onclick="filterContinent('all', this)">전체</button>
+                <button class="filter-btn" onclick="filterContinent('아시아', this)">아시아</button>
+                <button class="filter-btn" onclick="filterContinent('유럽', this)">유럽</button>
+                <button class="filter-btn" onclick="filterContinent('아프리카', this)">아프리카</button>
+                <button class="filter-btn" onclick="filterContinent('아메리카', this)">아메리카</button>
+                <button class="filter-btn" onclick="filterContinent('오세아니아', this)">오세아니아</button>
+                <button class="filter-btn" onclick="filterContinent('그 외 국기들', this)">그 외 국기들</button>
+            </div>
+        </header>
+
+        <div class="status-bar" id="status-bar">검색 결과: 0개</div>
+        <div class="container" id="flag-container"></div>
+    </div>
+
+    <section class="info-section" aria-labelledby="about-title">
+        <div class="info-card">
+            <h2 id="about-title"><span id="ui-learning-title">세계 국기와 수도를 한눈에 배우는</span> WorldFlagsNet</h2>
+            <p id="ui-learning-desc">
+                WorldFlagsNet은 국가와 지역의 국기를 살펴보고 수도와 대륙 정보를 함께 확인할 수 있는 학습용 웹사이트입니다.
+                국가명을 검색하거나 대륙별 필터를 사용하면 원하는 정보를 빠르게 찾을 수 있으며, 카드를 눌러 수도 정보를 확인할 수 있습니다.
+            </p>
+            <div class="info-grid">
+                <div>
+                    <h3 id="ui-quick-title">🔎 빠른 검색</h3>
+                    <p id="ui-quick-desc">국가명이나 수도를 입력해 관련 국기를 바로 찾아볼 수 있습니다.</p>
+                </div>
+                <div>
+                    <h3 id="ui-continent-title">🌍 대륙별 학습</h3>
+                    <p id="ui-continent-desc">아시아, 유럽, 아프리카, 아메리카, 오세아니아 등으로 정보를 나누어 볼 수 있습니다.</p>
+                </div>
+                <div>
+                    <h3 id="ui-flagquiz-title">🎮 국기 퀴즈</h3>
+                    <p id="ui-flagquiz-desc">난이도를 선택하고 10문제를 풀면서 국기와 국가 이름을 복습할 수 있습니다.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. 퀴즈 게임 모드 -->
+    <div class="quiz-wrapper" id="quiz-view">
+        <div class="quiz-card" id="quiz-start-screen">
+            <h2 id="ui-quiz-title">🏆 WorldFlagsNet 퀴즈 🏆</h2>
+            <p style="color:#64748b; margin-top:0.5rem; font-size:0.95rem;" id="ui-quiz-desc">난이도를 선택하세요. 라운드당 10문항이 출제됩니다.</p>
+
+            <div class="difficulty-selector">
+                <button class="diff-btn easy" onclick="startQuiz('easy')">
+                    <span id="ui-diff-easy">🟢 Easy (쉬움)</span>
+                </button>
+                <button class="diff-btn medium" onclick="startQuiz('medium')">
+                    <span id="ui-diff-medium">🔵 Medium (보통)</span>
+                </button>
+                <button class="diff-btn hard" onclick="startQuiz('hard')">
+                    <span id="ui-diff-hard">🟠 Hard (어려움)</span>
+                </button>
+                <button class="diff-btn expert" onclick="startQuiz('expert')">
+                    <span id="ui-diff-expert">🔴 Expert (전문가)</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="quiz-card" id="quiz-game-screen" style="display:none;">
+            <div class="quiz-header-bar">
+                <span id="quiz-diff-tag">EASY</span>
+                <span id="quiz-score-tag">점수: 0</span>
+                <span id="quiz-count-tag">문제 1/10</span>
+            </div>
+            <div class="quiz-progress"><div class="quiz-progress-fill" id="quiz-progress-bar"></div></div>
+
+            <img id="quiz-flag-img" class="flag-display" src="" alt="Flag">
+
+            <div class="options-grid" id="quiz-options">
+                <button class="option-btn" onclick="checkAnswer(0)"></button>
+                <button class="option-btn" onclick="checkAnswer(1)"></button>
+                <button class="option-btn" onclick="checkAnswer(2)"></button>
+                <button class="option-btn" onclick="checkAnswer(3)"></button>
+            </div>
+
+            <div class="quiz-feedback" id="quiz-feedback"></div>
+            <button class="next-btn" id="quiz-next-btn" onclick="nextQuestion()">다음 문제 ➔</button>
+        </div>
+
+        <div class="quiz-card" id="quiz-result-screen" style="display:none;">
+            <h2 id="ui-quiz-over">🎉 퀴즈 종료!</h2>
+            <p style="font-size: 1.4rem; font-weight: bold; margin: 1.2rem 0; color:#1e293b;" id="quiz-final-score">최종 점수: 100점</p>
+            <button class="next-btn" style="display:inline-block;" id="ui-retry-btn" onclick="resetQuiz()">다시 도전하기 🔄</button>
+        </div>
+    </div>
+
+    <footer class="site-footer">
+        <p>WorldFlagsNet은 세계 국기와 수도를 학습하기 위한 정보·퀴즈 사이트입니다.</p>
+        <nav aria-label="사이트 정보">
+            <a href="#privacy">개인정보처리방침</a>
+            <a href="#about">사이트 소개</a>
+            <a href="#contact">문의</a>
+        </nav>
+        <div id="privacy" hidden>
+            <h2>개인정보처리방침</h2>
+            <p>이 사이트는 기본적인 국기·국가 정보와 퀴즈 기능을 제공하며, 별도의 회원가입을 요구하지 않습니다.
+            광고 서비스나 분석 도구를 연결하는 경우 해당 서비스가 사용하는 쿠키 및 개인정보 처리 내용을
+            실제 운영 환경에 맞게 별도로 고지합니다.</p>
+        </div>
+        <div id="about" hidden><h2>사이트 소개</h2><p>WorldFlagsNet은 세계의 국기와 수도를 쉽고 재미있게 학습할 수 있도록 만든 교육용 사이트입니다.</p></div>
+        <div id="contact" hidden><h2>문의</h2><p>운영 관련 문의는 실제 운영자가 사용하는 연락처를 게시한 뒤 이 영역의 안내를 교체해 주세요.</p></div>
+        <p>© 2026 WorldFlagsNet. All rights reserved.</p>
+    </footer>
+
+    <script>
+        let currentLang = 'ko';
+
+        const i18n = {
+            ko: {
+                learningTitle: '세계 국기와 수도를 한눈에 배우는', navSearch: "🌐 백과사전", navQuiz: "🎮 국기 퀴즈", title: "WorldFlagsNet",
+                learningDesc: '국기를 클릭해 국가와 수도를 확인하고, 대륙별로 세계의 국기를 쉽게 학습해 보세요.', quickTitle: '🔎 빠른 검색', quickDesc: '국가명이나 수도를 입력해 관련 국기를 바로 찾아볼 수 있습니다.', continentTitle: '🌍 대륙별 학습', continentDesc: '아시아, 유럽, 아프리카, 아메리카, 오세아니아 등으로 정보를 나누어 볼 수 있습니다.', flagQuizTitle: '🎮 국기 퀴즈', flagQuizDesc: '난이도를 선택하고 10문제를 풀면서 국기와 국가 이름을 복습할 수 있습니다.',
+                placeholder: "국가명, 수도, 섬 이름 검색...", filterAll: "전체",
+                filterAsia: "아시아", filterEurope: "유럽", filterAfrica: "아프리카",
+                filterAmericas: "아메리카", filterOceania: "오세아니아", filterOther: "그 외 국기들",
+                statusCount: "검색 결과: ", capitalLabel: "수도/행정지",
+                quizTitle: "🏆 WorldFlagsNet 퀴즈 🏆", quizDesc: "난이도를 선택하세요. 라운드당 10문항이 출제됩니다.",
+                diffEasy: "🟢 Easy (쉬움)", diffMedium: "🔵 Medium (보통)", diffHard: "🟠 Hard (어려움)", diffExpert: "🔴 Expert (전문가)",
+                score: "점수: ", question: "문제 ", correct: "⭕ 정답입니다!", wrong: "❌ 틀렸습니다! 정답: ",
+                nextBtn: "다음 문제 ➔", quizOver: "🎉 퀴즈 종료!", retryBtn: "다시 도전하기 🔄"
+            },
+            en: {
+                learningTitle: 'Learn World Flags and Capitals at a Glance', navSearch: "🌐 Encyclopedia", navQuiz: "🎮 Flag Quiz", title: "WorldFlagsNet",
+                learningDesc: "Click a flag to see the country and capital, and learn the world's flags easily by continent.", quickTitle: "🔎 Quick Search", quickDesc: "Enter a country name or capital to find related flags instantly.", continentTitle: "🌍 Learn by Continent", continentDesc: "Browse information by Asia, Europe, Africa, the Americas, Oceania, and more.", flagQuizTitle: "🎮 Flag Quiz", flagQuizDesc: "Choose a difficulty and answer 10 questions to review flags and country names.",
+                placeholder: "Search country, capital, island...", filterAll: "All",
+                filterAsia: "Asia", filterEurope: "Europe", filterAfrica: "Africa",
+                filterAmericas: "Americas", filterOceania: "Oceania", filterOther: "Other Flags",
+                statusCount: "Results: ", capitalLabel: "Capital/Admin Center",
+                quizTitle: "🏆 WorldFlagsNet Quiz 🏆", quizDesc: "Select difficulty. 10 questions per round.",
+                diffEasy: "🟢 Easy", diffMedium: "🔵 Medium", diffHard: "🟠 Hard", diffExpert: "🔴 Expert",
+                score: "Score: ", question: "Question ", correct: "⭕ Correct!", wrong: "❌ Wrong! Answer: ",
+                nextBtn: "Next Question ➔", quizOver: "🎉 Quiz Completed!", retryBtn: "Try Again 🔄"
+            },
+            es: {
+                learningTitle: 'Aprende las banderas y capitales del mundo de un vistazo', navSearch: "🌐 Enciclopedia", navQuiz: "🎮 Quiz de Banderas", title: "WorldFlagsNet",
+                learningDesc: 'Haz clic en una bandera para consultar el país y la capital, y aprende fácilmente las banderas del mundo por continente.', quickTitle: '🔎 Búsqueda rápida', quickDesc: 'Introduce un país o una capital para encontrar rápidamente las banderas relacionadas.', continentTitle: '🌍 Aprendizaje por continente', continentDesc: 'Explora la información por Asia, Europa, África, América, Oceanía y más.', flagQuizTitle: '🎮 Quiz de Banderas', flagQuizDesc: 'Elige una dificultad y responde 10 preguntas para repasar las banderas y los nombres de los países.',
+                placeholder: "Buscar país, capital, isla...", filterAll: "Todos",
+                filterAsia: "Asia", filterEurope: "Europa", filterAfrica: "África",
+                filterAmericas: "Américas", filterOceania: "Oceanía", filterOther: "Otras Banderas",
+                statusCount: "Resultados: ", capitalLabel: "Capital / Centro Admin.",
+                quizTitle: "🏆 WorldFlagsNet Quiz 🏆", quizDesc: "Elige la dificultad. 10 preguntas por ronda.",
+                diffEasy: "🟢 Fácil", diffMedium: "🔵 Medio", diffHard: "🟠 Difícil", diffExpert: "🔴 Experto",
+                score: "Puntos: ", question: "Pregunta ", correct: "⭕ ¡Correcto!", wrong: "❌ ¡Incorrecto! Respuesta: ",
+                nextBtn: "Siguiente ➔", quizOver: "🎉 ¡Quiz Finalizado!", retryBtn: "Reintentar 🔄"
+            },
+            zh: {
+                learningTitle: '一目了然地学习世界国旗和首都', navSearch: "🌐 百科全书", navQuiz: "🎮 国旗测验", title: "WorldFlagsNet",
+                learningDesc: '点击国旗查看国家和首都，并按大洲轻松学习世界各国国旗。', quickTitle: '🔎 快速搜索', quickDesc: '输入国家名称或首都名称，即可快速找到相关国旗。', continentTitle: '🌍 按大洲学习', continentDesc: '按亚洲、欧洲、非洲、美洲、大洋洲等分类浏览信息。', flagQuizTitle: '🎮 国旗测验', flagQuizDesc: '选择难度并完成 10 道题目，复习国旗和国家名称。',
+                placeholder: "搜索国家、首都、岛屿名称...", filterAll: "全部",
+                filterAsia: "亚洲", filterEurope: "欧洲", filterAfrica: "非洲",
+                filterAmericas: "美洲", filterOceania: "大洋洲", filterOther: "其他旗帜",
+                statusCount: "搜索结果: ", capitalLabel: "首都 / 行政中心",
+                quizTitle: "🏆 WorldFlagsNet 测验 🏆", quizDesc: "选择难度。每轮共有 10 道题目。",
+                diffEasy: "🟢 简单", diffMedium: "🔵 中等", diffHard: "🟠 困难", diffExpert: "🔴 专家",
+                score: "得分: ", question: "题目 ", correct: "⭕ 回答正确！", wrong: "❌ 回答错误！正确答案: ",
+                nextBtn: "下一题 ➔", quizOver: "🎉 测验结束！", retryBtn: "重新挑战 🔄"
+            }
+        };
+
+        const rawData = [
+            // 아시아 UN 승인국
+            "kr|대한민국/South Korea/Corea del Sur/韩国|서울/Seoul/Seúl/首尔|아시아|easy|37.5665|126.9780",
+            "jp|일본/Japan/Japón/日本|도쿄/Tokyo/Tokio/东京|아시아|easy|35.6762|139.6503",
+            "cn|중국/China/China/中国|베이징/Beijing/Pekín/北京|아시아|easy|39.9042|116.4074",
+            "kp|북한/North Korea/Corea del Norte/朝鲜|평양/Pyongyang/Pionyang/平壤|아시아|medium|39.0392|125.7625",
+            "mn|몽골/Mongolia/Mongolia/蒙古|울란바토르/Ulaanbaatar/Ulan Bator/乌兰巴托|아시아|medium|47.8864|106.9057",
+            "np|네팔/Nepal/Nepal/尼泊尔|카트만두/Kathmandu/Katmandú/加德满得|아시아|hard|27.7172|85.3240",
+            "tl|동티모르/East Timor/Timor Oriental/东帝汶|딜리/Dili/Dili/帝力|아시아|hard|-8.5569|125.5603",
+            "la|라오스/Laos/Laos/老挝|비엔티안/Vientiane/Vientián/万象|아시아|medium|17.9757|102.6331",
+            "my|말레이시아/Malaysia/Malasia/马来西亚|쿠알라룸푸르/Kuala Lumpur/Kuala Lumpur/吉隆坡|아시아|medium|3.1390|101.6869",
+            "mv|몰디브/Maldives/Maldivas/马尔代夫|말레/Malé/Malé/马累|아시아|medium|4.1755|73.5093",
+            "mm|미얀마/Myanmar/Myanmar/缅甸|네피도/Naypyidaw/Naypyidaw/内比都|아시아|medium|19.7633|96.0785",
+            "bd|방글라데시/Bangladesh/Bangladés/孟加拉国|다카/Dhaka/Daca/达卡|아시아|medium|23.8103|90.4125",
+            "vn|베트남/Vietnam/Vietnam/越南|하노이/Hanoi/Hanói/河内|아시아|medium|21.0285|105.8542",
+            "bt|부탄/Bhutan/Bután/不丹|팀푸/Thimphu/Timbu/廷布|아시아|hard|27.4728|89.6394",
+            "bn|브루나이/Brunei/Brunéi/文莱|반다르스리베가완/Bandar Seri Begawan/Bandar Seri Begawan/斯里巴加湾市|아시아|hard|4.9031|114.9398",
+            "lk|스리랑카/Sri Lanka/Sri Lanka/斯里兰卡|스리자야와르데네푸라코테/Sri Jayawardenepura Kotte/Sri Jayawardenepura Kotte/斯里贾亚瓦德纳普拉科特|아시아|hard|6.8851|79.9189",
+            "sg|싱가포르/Singapore/Singapur/新加坡|싱가포르/Singapore/Singapur/新加坡|아시아|medium|1.3521|103.8198",
+            "af|아프가니스탄/Afghanistan/Afganistán/阿富汗|카불/Kabul/Cabul/喀布尔|아시아|hard|34.5553|69.2075",
+            "in|인도/India/India/印度|뉴델리/New Delhi/Nueva Delhi/新德里|아시아|medium|28.6139|77.2090",
+            "id|인도네시아/Indonesia/Indonesia/印度尼西亚|자카르타/Jakarta/Yakarta/雅加达|아시아|hard|-6.2088|106.8456",
+            "kh|캄보디아/Cambodia/Camboya/柬埔寨|프놈펜/Phnom Penh/Nom Pen/金边|아시아|medium|11.5564|104.9282",
+            "th|태국/Thailand/Tailandia/泰国|방콕/Bangkok/Bangkok/曼谷|아시아|medium|13.7563|100.5018",
+            "pk|파키스탄/Pakistan/Pakistán/巴基斯坦|이슬라마바드/Islamabad/Islamabad/伊斯兰堡|아시아|medium|33.6844|73.0479",
+            "ph|필리핀/Philippines/Filipinas/菲律宾|마닐라/Manila/Manila/马尼拉|아시아|medium|14.5995|120.9842",
+            "lb|레바논/Lebanon/Líbano/黎巴嫩|베이루트/Beirut/Beirut/贝鲁特|아시아|medium|33.8938|35.5018",
+            "bh|바레인/Bahrain/Bahréin/巴林|마나마/Manama/Manama/麦纳麦|아시아|hard|26.2285|50.5860",
+            "sa|사우디아라비아/Saudi Arabia/Arabia Saudita/沙特阿拉伯|리야드/Riyadh/Riad/利雅得|아시아|medium|24.7136|46.6753",
+            "sy|시리아/Syria/Siria/叙利亚|다마스쿠스/Damascus/Damasco/大马士革|아시아|medium|33.5138|36.2765",
+            "ae|아랍에미리트/United Arab Emirates/Emiratos Árabes Unidos/阿联酋|아부다비/Abu Dhabi/Abu Dabi/阿布扎比|아시아|medium|24.4539|54.3773",
+            "am|아르메니아/Armenia/Armenia/亚美尼亚|예레반/Yerevan/Ereván/埃里温|아시아|hard|40.1792|44.4991",
+            "az|아제르바이잔/Azerbaijan/Azerbaiyán/阿塞拜疆|바쿠/Baku/Bacú/巴库|아시아|hard|40.4093|49.8671",
+            "ye|예멘/Yemen/Yemen/也门|사나/Sanaa/Saná/萨那|아시아|medium|15.3694|44.1910",
+            "om|오만/Oman/Omán/阿曼|무스카트/Muscat/Mascate/马斯喀特|아시아|hard|23.5880|58.3829",
+            "jo|요르단/Jordan/Jordania/约旦|암만/Amman/Amán/安曼|아시아|hard|31.9454|35.9284",
+            "uz|우즈베키스탄/Uzbekistan/Uzbekistán/乌兹别克斯坦|타슈켄트/Tashkent/Taskent/塔什干|아시아|hard|41.2995|69.2401",
+            "iq|이라크/Iraq/Irak/伊拉克|바그다드/Baghdad/Bagdad/巴格达|아시아|medium|33.3152|44.3661",
+            "ir|이란/Iran/Irán/伊朗|테헤란/Tehran/Teherán/德黑兰|아시아|medium|35.6892|51.3890",
+            "il|이스라엘/Israel/Israel/以色列|예루살렘/Jerusalem/Jerusalén/耶路撒冷|아시아|medium|31.7683|35.2137",
+            "ge|조지아/Georgia/Georgia/格鲁吉亚|트빌리시/Tbilisi/Tiflis/第比利斯|아시아|hard|41.7151|44.8271",
+            "kz|카자흐스탄/Kazakhstan/Kazajistán/哈萨克斯坦|아스타나/Astana/Astana/阿斯塔纳|아시아|medium|51.1694|71.4491",
+            "qa|카타르/Qatar/Catar/卡塔尔|도하/Doha/Doha/多哈|아시아|hard|25.2854|51.5310",
+            "kw|쿠웨이트/Kuwait/Kuwait/科威特|쿠웨이트시티/Kuwait City/Ciudad de Kuwait/科威特城|아시아|medium|29.3759|47.9774",
+            "kg|키르기스스탄/Kyrgyzstan/Kirguistán/吉尔吉斯斯坦|비슈케크/Bishkek/Biskek/比什凯克|아시아|hard|42.8746|74.5698",
+            "cy|키프로스/Cyprus/Chipre/塞浦路斯|니코시아/Nicosia/Nicosia/尼科西亚|아시아|hard|35.1856|33.3823",
+            "tj|타지키스탄/Tajikistan/Tayikistán/塔吉克斯坦|두샨베/Dushanbe/Dushambé/杜尚别|아시아|hard|38.5598|68.7870",
+            "tm|투르크메니스탄/Turkmenistan/Turkmenistán/土库曼斯坦|아슈하바트/Ashgabat/Asgabat/阿什哈바드|아시아|hard|37.9601|58.3261",
+            "tr|튀르키예/Turkey/Turquía/土耳其|앙카라/Ankara/Ankara/安卡拉|아시아|medium|39.9334|32.8597",
+
+            // 유럽 UN 승인국
+            "de|독일/Germany/Alemania/德国|베를린/Berlin/Berlín/柏林|유럽|easy|52.5200|13.4050",
+            "ru|러시아/Russia/Rusia/俄罗斯|모스크바/Moscow/Moscú/莫斯科|유럽|easy|55.7558|37.6173",
+            "gb|영국/United Kingdom/Reino Unido/英国|런던/London/Londres/伦敦|유럽|easy|51.5074|-0.1278",
+            "fr|프랑스/France/Francia/法国|파리/Paris/París/巴黎|유럽|easy|48.8566|2.3522",
+            "nl|네덜란드/Netherlands/Países Bajos/荷兰|암스테르담/Amsterdam/Ámsterdam/阿姆斯特丹|유럽|medium|52.3676|4.9041",
+            "no|노르웨이/Norway/Noruega/挪威|오슬로/Oslo/Oslo/奥斯陆|유럽|medium|59.9139|10.7522",
+            "dk|덴마크/Denmark/Dinamarca/丹麦|코펜하겐/Copenhagen/Copenhague/哥本哈根|유럽|medium|55.6761|12.5683",
+            "lu|룩셈부르크/Luxembourg/Lemburgo/卢森堡|룩셈부르크/Luxembourg/Luxemburgo/卢森堡|유럽|hard|49.6116|6.1319",
+            "be|벨기에/Belgium/Bélgica/比利时|브뤼셀/Brussels/Bruselas/布鲁塞尔|유럽|medium|50.8503|4.3517",
+            "se|스웨덴/Sweden/Suecia/瑞典|스톡홀름/Stockholm/Estocolmo/斯德哥尔摩|유럽|medium|59.3293|18.0686",
+            "ch|스위스/Switzerland/Suiza/瑞士|베른/Bern/Berna/伯尔尼|유럽|medium|46.9480|7.4474",
+            "is|아이슬란드/Iceland/Islandia/冰岛|레이캬비크/Reykjavik/Reikiavik/雷克雅未克|유럽|medium|64.1466|-21.9426",
+            "ie|아일랜드/Ireland/Irlanda/爱尔兰|더블린/Dublin/Dublín/都柏林|유럽|hard|53.3498|-6.2603",
+            "at|오스트리아/Austria/Austria/奥地利|빈/Vienna/Viena/维也纳|유럽|medium|48.2082|16.3738",
+            "fi|핀란드/Finland/Finlandia/芬兰|헬싱키/Helsinki/Helsinki/赫尔辛키|유럽|medium|60.1699|24.9384",
+            "gr|그리스/Greece/Grecia/希腊|아테네/Athens/Atenas/雅典|유럽|medium|37.9838|23.7275",
+            "lv|라트비아/Latvia/Letonia/拉脱维亚|리가/Riga/Riga/里加|유럽|hard|56.9496|24.1052",
+            "ro|루마니아/Romania/Rumania/罗马尼亚|부쿠레슈티/Bucharest/Bucarest/布加勒斯特|유럽|hard|44.4268|26.1025",
+            "lt|리투아니아/Lithuania/Lituania/立陶宛|빌뉴스/Vilnius/Vilna/维尔纽斯|유럽|hard|54.6872|25.2797",
+            "li|리히텐슈타인/Liechtenstein/Liechtenstein/列支敦士登|파두츠/Vaduz/Vaduz/瓦杜兹|유럽|hard|47.1410|9.5209",
+            "mc|모나코/Monaco/Mónaco/摩纳哥|모나코/Monaco/Mónaco/摩纳哥|유럽|hard|43.7384|7.4246",
+            "me|몬테네그로/Montenegro/Montenegro/黑山|포드고리차/Podgorica/Podgorica/波德戈里察|유럽|hard|42.4411|19.2636",
+            "md|몰도바/Moldova/Moldavia/摩尔多瓦|키시너우/Chisinau/Chisinau/基希讷乌|유럽|hard|47.0105|28.8638",
+            "mt|몰타/Malta/Malta/马耳他|발레타/Valletta/La Valeta/瓦莱塔|유럽|hard|35.8985|14.5146",
+            "ba|보스니아 헤르체고비나/Bosnia & Herzegovina/Bosnia y Herzegovina/波斯尼亚和黑塞哥维那|사라예보/Sarajevo/Sarajevo/萨拉热窝|유럽|hard|43.8563|18.4131",
+            "mk|북마케도니아/North Macedonia/Macedonia del Norte/北马其顿|스코페/Skopje/Skopje/斯科普里|유럽|hard|41.9981|21.4254",
+            "bg|불가리아/Bulgaria/Bulgaria/保加利亚|소피아/Sofia/Sofía/索非亚|유럽|medium|42.6977|23.3219",
+            "sm|산마리노/San Marino/San Marino/圣马力诺|산마리노/San Marino/San Marino/圣马力诺|유럽|hard|43.9424|12.4578",
+            "rs|세르비아/Serbia/Serbia/塞尔维亚|베오그라드/Belgrade/Belgrado/贝尔格莱德|유럽|medium|44.7866|20.4489",
+            "es|스페인/Spain/España/西班牙|마드리드/Madrid/Madrid/马德里|유럽|easy|40.4168|-3.7038",
+            "sk|슬로바키아/Slovakia/Eslovaquia/斯洛伐克|브라티슬라바/Bratislava/Bratislava/布拉迪斯拉发|유럽|hard|48.1486|17.1077",
+            "si|슬로베니아/Slovenia/Eslovenia/斯洛文尼亚|류블랴나/Ljubljana/Liubliana/卢布尔雅那|유럽|hard|46.0569|14.5058",
+            "ad|안도라/Andorra/Andorra/安道尔|안도라라베야/Andorra la Vella/Andorra la Vieja/安道尔城|유럽|hard|42.5063|1.5218",
+            "al|알바니아/Albania/Albania/阿尔巴尼亚|티라나/Tirana/Tirana/地拉那|유럽|hard|41.3275|19.8187",
+            "ua|우크라이나/Ukraine/Ucrania/乌克兰|키이우/Kyiv/Kiev/基辅|유럽|medium|50.4501|30.5234",
+            "it|이탈리아/Italy/Italia/意大利|로마/Rome/Roma/罗马|유럽|easy|41.9028|12.4964",
+            "cz|체코/Czech Republic/República Checa/捷克|프라하/Prague/Praga/布拉格|유럽|medium|50.0755|14.4378",
+            "hr|크로아티아/Croatia/Croacia/克罗地亚|자그레브/Zagreb/Zagreb/萨格勒布|유럽|medium|45.8150|15.9819",
+            "pt|포르투갈/Portugal/Portugal/葡萄牙|리스본/Lisbon/Lisboa/리스본|유럽|medium|38.7223|-9.1393",
+            "pl|폴란드/Poland/Polonia/波兰|바르샤바/Warsaw/Varsovia/华沙|유럽|hard|52.2297|21.0122",
+            "hu|헝가리/Hungary/Hungría/匈牙利|부다페스트/Budapest/Budapest/布达페스트|유럽|medium|47.4979|19.0402",
+            "by|벨라루스/Belarus/Bielorrusia/白俄罗斯|민스크/Minsk/Minsk/明斯克|유럽|hard|53.9006|27.5590",
+            "ee|에스토니아/Estonia/Estonia/爱沙尼亚|탈린/Tallinn/Tallin/塔林|유럽|hard|59.4370|24.7536",
+            "va|바티칸 시국/Vatican City/Ciudad del Vaticano/梵蒂冈|바티칸 시국/Vatican City/Ciudad del Vaticano/梵蒂冈|유럽|medium|41.9029|12.4534",
+
+            // 아프리카 UN 승인국
+            "eg|이집트/Egypt/Egipto/埃及|카이로/Cairo/El Cairo/开罗|아프리카|medium|30.0444|31.2357",
+            "ng|나이지리아/Nigeria/Nigeria/尼日利亚|아부자/Abuja/Abuya/阿布贾|아프리카|medium|9.0765|7.3986",
+            "za|남아프리카 공화국/South Africa/Sudáfrica/南非|프리토리아/Pretoria/Pretoria/比勒陀利亚|아프리카|medium|-25.7479|28.2293",
+            "gh|가나/Ghana/Ghana/加纳|아크라/Accra/Accra/阿克拉|아프리카|medium|5.6037|-0.1870",
+            "gm|감비아/Gambia/Gambia/冈比亚|반줄/Banjul/Banjul/班珠尔|아프리카|hard|13.4549|-16.5790",
+            "gn|기니/Guinea/Guinea/几内亚|코나크리/Conakry/Conakri/科纳克里|아프리카|hard|9.5092|-13.7122",
+            "gw|기니비사우/Guinea-Bissau/Guinea-Bisáu/几内亚比绍|비사우/Bissau/Bisáu/比绍|아프리카|hard|11.8631|-15.5977",
+            "lr|리베리아/Liberia/Liberia/利比里亚|몬로비아/Monrovia/Monrovia/蒙罗维亚|아프리카|medium|6.3156|-10.8074",
+            "ly|리비아/Libya/Libia/利比亚|트리폴리/Tripoli/Trípoli/的黎波里|아프리카|medium|32.8872|13.1913",
+            "ma|모로코/Morocco/Marruecos/摩洛哥|라바트/Rabat/Rabat/拉바트|아프리카|medium|34.0209|-6.8416",
+            "mr|모리타니/Mauritania/Mauritania/毛里塔尼亚|누악쇼트/Nouakchott/Nuakchot/努瓦克肖트|아프리카|hard|18.0735|-15.9582",
+            "bj|베냉/Benin/Benín/贝宁|포르토노보/Porto-Novo/Porto Novo/波多诺伏|아프리카|hard|6.4969|2.6288",
+            "bf|부르키나파소/Burkina Faso/Burkina Faso/布基纳法索|와가두구/Ouagadougou/Uagadugú/瓦加杜古|아프리카|hard|12.3714|-1.5197",
+            "sn|세네갈/Senegal/Senegal/塞内加尔|다카르/Dakar/Dakar/达喀尔|아프리카|hard|14.7167|-17.4677",
+            "sl|시에라리온/Sierra Leone/Sierra Leona/塞拉利昂|프리타운/Freetown/Freetown/弗里敦|아프리카|hard|8.4840|-13.2299",
+            "dz|알제리/Algeria/Argelia/阿尔及利亚|알제/Algiers/Argel/阿尔及尔|아프리카|medium|36.7538|3.0588",
+            "ci|코트디부아르/Ivory Coast/Costa de Marfil/科特迪瓦|야무수크로/Yamoussoukro/Yamusukro/亚穆苏克罗|아프리카|hard|6.8276|-5.2893",
+            "tg|토고/Togo/Togo/多哥|로메/Lomé/Lomé/洛美|아프리카|hard|6.1375|1.2123",
+            "tn|튀니지/Tunisia/Túnez/突尼斯|튀니스/Tunis/Túnez/突尼斯|아프리카|medium|36.8065|10.1815",
+            "ne|니제르/Niger/Níger/尼日尔|니아메/Niamey/Niamey/尼亚美|아프리카|hard|13.5116|2.1254",
+            "cv|카보베르데/Cape Verde/Cabo Verde/佛得角|프라이아/Praia/Praia/普라야|아프리카|hard|14.9330|-23.5133",
+            "ga|가봉/Gabon/Gabón/加蓬|리브르빌/Libreville/Libreville/利伯维尔|아프리카|hard|0.3901|9.4544",
+            "na|나미비아/Namibia/Namibia/纳米比亚|빈트후크/Windhoek/Windhoek/温得和克|아프리카|hard|-22.5609|17.0658",
+            "ss|남수단/South Sudan/Sudán del Sur/南苏丹|주바/Juba/Juba/朱巴|아프리카|hard|4.8594|31.5713",
+            "rw|르완다/Rwanda/Ruanda/卢旺达|키갈리/Kigali/Kigali/基加利|아프리카|hard|-1.9441|30.0619",
+            "mg|마다가스카르/Madagascar/Madagascar/马达加斯加|안타나나리보/Antananarivo/Antananarivo/塔那那利佛|아프리카|hard|-18.8792|47.5079",
+            "mw|말라위/Malawi/Malaui/马拉维|릴롱궤/Lilongwe/Lilongwe/利隆圭|아프리카|hard|-13.9626|33.7741",
+            "ml|말리/Mali/Malí/马里|바마코/Bamako/Bamako/巴马科|아프리카|hard|12.6392|-8.0029",
+            "mu|모리셔스/Mauritius/Mauricio/毛里求斯|포트루이스/Port Louis/Port Louis/路易港|아프리카|hard|-20.1609|57.5012",
+            "mz|모잠비크/Mozambique/Mozambique/莫桑比克|마푸투/Maputo/Maputo/马普托|아프리카|hard|-25.9692|32.5732",
+            "bw|보츠와나/Botswana/Botsuana/博茨瓦纳|가보로네/Gaborone/Gaborone/哈博罗内|아프리카|hard|-24.6282|25.9231",
+            "bi|부룬디/Burundi/Burundi/布隆迪|기테가/Gitega/Gitega/基特加|아프리카|hard|-3.4272|29.9246",
+            "st|상투메 프린시페/São Tomé & Príncipe/Santo Tomé y Príncipe/圣多美和普林西比|상투메/São Tomé/Santo Tomé/圣多美|아프리카|hard|0.3302|6.7333",
+            "sc|세이셸/Seychelles/Seychelles/塞舌尔|빅토리아/Victoria/Victoria/维多利亚|아프리카|hard|-4.6191|55.4513",
+            "so|소말리아/Somalia/Somalia/索马里|모가디슈/Mogadishu/Mogadiscio/摩加迪沙|아프리카|medium|2.0469|45.3182",
+            "sd|수단/Sudan/Sudán/苏丹|하르툼/Khartoum/Jartum/喀土穆|아프리카|medium|15.5007|32.5599",
+            "sz|에스와티니/Eswatini/Esuatini/斯威士兰|음바바네/Mbabane/Mbabane/姆巴巴内|아프리카|hard|-26.3054|31.1367",
+            "ao|앙골라/Angola/Angola/安哥拉|루안다/Luanda/Luanda/罗安达|아프리카|hard|-8.8390|13.2894",
+            "er|에리트레아/Eritrea/Eritrea/厄立特里亚|아스마라/Asmara/Asmara/阿斯马拉|아프리카|hard|15.3229|38.9251",
+            "et|에티오피아/Ethiopia/Etiopía/埃塞俄比亚|아디스아바바/Addis Ababa/Adís Abeba/亚的斯亚贝바|아프리카|medium|9.0320|38.7421",
+            "ug|우간다/Uganda/Uganda/乌干达|캄팔라/Kampala/Kampala/坎帕拉|아프리카|hard|0.3476|32.5825",
+            "zm|잠비아/Zambia/Zambia/赞比亚|루사카/Lusaka/Lusaka/卢萨卡|아프리카|hard|-15.3875|28.3228",
+            "gq|적도 기니/Equatorial Guinea/Guinea Ecuatorial/赤道几内亚|말라보/Malabo/Malabo/马拉博|아프리카|hard|3.7504|8.7731",
+            "cf|중앙아프리카 공화국/Central African Rep./Rep. Centroafricana/中非|방기/Bangui/Bangui/班吉|아프리카|hard|4.3947|18.5582",
+            "dj|지부티/Djibouti/Yibuti/吉布티|지부티/Djibouti/Yibuti/吉布提|아프리카|hard|11.5888|43.1450",
+            "zw|짐바브웨/Zimbabwe/Zimbabue/津바브웨|하라레/Harare/Harare/哈拉雷|아프리카|hard|-17.8252|31.0335",
+            "td|차드/Chad/Chad/乍得|엔자메나/N'Djamena/Yamena/恩贾梅纳|아프리카|hard|12.1348|15.0557",
+            "cm|카메룬/Cameroon/Camerún/喀麦隆|야운데/Yaoundé/Yaundé/雅温得|아프리카|medium|3.8480|11.5021",
+            "ke|케냐/Kenya/Kenia/肯尼亚|나이로비/Nairobi/Nairobi/内罗毕|아프리카|medium|-1.2921|36.8219",
+            "km|코모로/Comoros/Comoras/科摩罗|모로니/Moroni/Moroni/莫罗尼|아프리카|hard|-11.7022|43.2551",
+            "cg|콩고 공화국/Rep. of the Congo/Rep. del Congo/刚果共和国|브라자빌/Brazzaville/Brazzaville/布拉柴维尔|아프리카|hard|-4.2634|15.2429",
+            "cd|콩고 민주 공화국/DR Congo/R.D. del Congo/刚果民主共和国|킨샤사/Kinshasa/Kinsasa/金沙萨|아프리카|hard|-4.4419|15.2663",
+            "tz|탄자니아/Tanzania/Tanzania/坦桑尼亚|도도마/Dodoma/Dodoma/多多马|아프리카|medium|-6.1630|35.7516",
+
+            // 아메리카 UN 승인국
+            "us|미국/United States/Estados Unidos/美国|워싱턴 D.C./Washington, D.C./Washington D.C./华盛顿特区|아메리카|easy|38.8951|-77.0364",
+            "ca|캐나다/Canada/Canadá/加拿大|오타와/Ottawa/Ottawa/渥太华|아메리카|easy|45.4215|-75.6972",
+            "mx|멕시코/Mexico/México/墨西哥|멕시코시티/Mexico City/Ciudad de México/墨西哥城|아메리카|medium|19.4326|-99.1332",
+            "gt|과테말라/Guatemala/Guatemala/危地马拉|과테말라시티/Guatemala City/Ciudad de Guatemala/危地马拉城|아메리카|hard|14.6349|-90.5069",
+            "ni|니카라과/Nicaragua/Nicaragua/尼加拉瓜|마나과/Managua/Managua/马那瓜|아메리카|hard|12.1364|-86.2514",
+            "bz|벨리즈/Belize/Belice/伯利兹|벨모판/Belmopan/Belmopán/贝尔莫潘|아메리카|hard|17.2510|-88.7590",
+            "sv|엘살바도르/El Salvador/El Salvador/萨尔瓦多|산살바도르/San Salvador/San Salvador/圣萨尔瓦多|아메리카|hard|13.6929|-89.2182",
+            "hn|온두라스/Honduras/Honduras/洪都拉斯|테구시갈파/Tegucigalpa/Tegucigalpa/特古西加尔巴|아메리카|hard|14.0723|-87.1921",
+            "cr|코스타리카/Costa Rica/Costa Rica/哥斯达黎加|산호세/San José/San José/圣何塞|아메리카|medium|9.9281|-84.0907",
+            "pa|파나마/Panama/Panamá/巴拿马|파나마시티/Panama City/Ciudad de Panamá/巴拿马城|아메리카|medium|8.9824|-79.5199",
+            "gd|그레나다/Grenada/Granada/格林纳达|세인트조지스/St. George's/San Jorge/圣乔治|아메리카|hard|12.0561|-61.7485",
+            "do|도미니카 공화국/Dominican Republic/Rep. Dominicana/多米尼加共和国|산토도밍고/Santo Domingo/Santo Domingo/圣多明各|아메리카|medium|18.4861|-69.9312",
+            "dm|도미니카 연방/Dominica/Dominica/多米尼克|로조/Roseau/Roseau/罗索|아메리카|hard|15.3015|-61.3881",
+            "bb|바베이도스/Barbados/Barbados/巴巴多斯|브리지타운/Bridgetown/Bridgetown/布里奇敦|아메리카|hard|13.1032|-59.6167",
+            "bs|바하마/Bahamas/Bahamas/巴哈马|나소/Nassau/Nassau/拿骚|아메리카|medium|25.0343|-77.3963",
+            "vc|세인트빈센트 그레나딘/St. Vincent & Grenadines/San Vicente y las Granadinas/圣文森特和格林纳丁斯|킹스타운/Kingstown/Kingstown/金斯敦|아메리카|hard|13.1581|-61.2248",
+            "kn|세인트키츠 네비스/St. Kitts & Nevis/San Cristóbal y Nieves/圣基茨和尼维斯|바스테르/Basseterre/Basseterre/巴斯特尔|아메리카|hard|17.2974|-62.7247",
+            "lc|세인트루시아/Saint Lucia/Santa Lucía/圣卢西亚|카스트리스/Castries/Castries/卡斯特里|아메리카|hard|14.0101|-60.9875",
+            "ht|아이티/Haiti/Haití/海地|포르토프랭스/Port-au-Prince/Puerto Príncipe/太子港|아메리카|medium|18.5944|-72.3074",
+            "ag|앤티가 바부다/Antigua & Barbuda/Antigua y Barbuda/安提瓜和巴布达|세인트존스/St. John's/San Juan/圣约翰|아메리카|hard|17.1274|-61.8468",
+            "jm|자메이카/Jamaica/Jamaica/牙买加|킹스턴/Kingston/Kingston/金斯敦|아메리카|medium|17.9712|-76.7936",
+            "tt|트리니다드 토바고/Trinidad & Tobago/Trinidad y Tobago/特立尼达和多巴哥|포트오브스페인/Port of Spain/Puerto España/西班牙港|아메리카|medium|10.6549|-61.5019",
+            "cu|쿠바/Cuba/Cuba/古巴|아바나/Havana/La Habana/哈瓦那|아메리카|medium|23.1136|-82.3666",
+            "br|브라질/Brazil/Brasil/巴西|브라질리아/Brasília/Brasilia/巴西利亚|아메리카|easy|-15.7975|-47.8919",
+            "ar|아르헨티나/Argentina/Argentina/阿根廷|부에노스아이레스/Buenos Aires/Buenos Aires/布宜诺스艾利斯|아메리카|medium|-34.6037|-58.3816",
+            "gy|가이아나/Guyana/Guyana/圭亚那|조지타운/Georgetown/Georgetown/乔治敦|아메리카|hard|6.8013|-58.1553",
+            "ve|베네수엘라/Venezuela/Venezuela/委内瑞拉|카라카스/Caracas/Caracas/加拉加斯|아메리카|medium|10.4806|-66.9036",
+            "bo|볼리비아/Bolivia/Bolivia/玻利维亚|수크레/Sucre/Sucre/苏克雷|아메리카|medium|-19.0196|-65.2627",
+            "sr|수리남/Suriname/Surinam/苏里南|파라마리보/Paramaribo/Paramaribo/帕라마리보|아메리카|hard|5.8520|-55.2038",
+            "ec|에콰도르/Ecuador/Ecuador/厄瓜多尔|키토/Quito/Quito/基多|아메리카|medium|-0.1807|-78.4678",
+            "uy|우루과이/Uruguay/Uruguay/乌拉圭|몬테비데오/Montevideo/Montevideo/蒙得维的亚|아메리카|medium|-34.9011|-56.1645",
+            "cl|칠레/Chile/Chile/智利|산티아고/Santiago/Santiago/圣地亚哥|아메리카|medium|-33.4489|-70.6693",
+            "co|콜롬비아/Colombia/Colombia/哥伦比亚|보고타/Bogotá/Bogotá/波哥大|아메리카|medium|4.7110|-74.0721",
+            "py|파라과이/Paraguay/Paraguay/巴拉圭|아순시온/Asunción/Asunción/亚松森|아메리카|hard|-25.2637|-57.5759",
+            "pe|페루/Peru/Perú/秘鲁|리마/Lima/Lima/利马|아메리카|medium|-12.0464|-77.0428",
+
+            // 오세아니아 UN 승인국
+            "au|호주/Australia/Australia/澳大利亚|캔버라/Canberra/Canberra/堪培拉|오세아니아|easy|-35.2809|149.1300",
+            "nz|뉴질랜드/New Zealand/Nueva Zelanda/新西兰|웰링턴/Wellington/Wellington/惠灵顿|오세아니아|medium|-41.2866|174.7756",
+            "nr|나우루/Nauru/Nauru/瑙鲁|야렌/Yaren/Yaren/亚伦|오세아니아|hard|-0.5228|166.9155",
+            "mh|마셜 제도/Marshall Islands/Islas Marshall/马绍尔群岛|마주로/Majuro/Majuro/马朱罗|오세아니아|hard|7.1315|171.3803",
+            "fm|미크로네시아/Micronesia/Micronesia/密克罗尼西亚|팔리키르/Palikir/Palikir/帕利基尔|오세아니아|hard|6.9248|158.1611",
+            "vu|바누아투/Vanuatu/Vanuatu/瓦努阿图|포트빌라/Port Vila/Port Vila/维拉港|오세아니아|hard|-17.7334|168.3273",
+            "ws|사모아/Samoa/Samoa/萨摩亚|아피아/Apia/Apia/阿皮亚|오세아니아|hard|-13.8333|-171.7667",
+            "sb|솔로몬 제도/Solomon Islands/Islas Salomón/所罗门群岛|호니아라/Honiara/Honiara/霍니아라|오세아니아|hard|-9.4456|159.9729",
+            "ki|키리바시/Kiribati/Kiribati/基里바스|타라와/Tarawa/Tarawa/塔拉瓦|오세아니아|hard|1.4518|172.9717",
+            "to|통가/Tonga/Tonga/汤加|누쿠알로파/Nukuʻalofa/Nukualofa/努库阿洛法|오세아니아|hard|-21.1390|-175.2048",
+            "tv|투발루/Tuvalu/Tuvalu/图瓦卢|푸나푸티/Funafuti/Funafuti/富纳富提|오세아니아|hard|-8.5211|179.1962",
+            "pg|파푸아뉴기니/Papua New Guinea/Papúa Nueva Guinea/巴布亚新几内亚|포트모르즈비/Port Moresby/Puerto Moresby/莫尔兹비港|오세아니아|hard|-9.4438|147.1803",
+            "pw|팔라우/Palau/Palaos/帕劳|응게룰무드/Ngerulmud/Ngerulmud/恩吉鲁穆드|오세아니아|hard|7.5004|134.6242",
+            "fj|피지/Fiji/Fiyi/斐济|수바/Suva/Suva/苏瓦|오세아니아|hard|-18.1416|178.4419",
+            "ps|팔레스타인/Palestine/Palestina/巴勒斯坦|동예루살렘/East Jerusalem/Jerusalén Este/东耶路撒冷|아시아|medium|31.7683|35.2137",
+
+            // 그 외 국기들 (미승인국, 독립운동, 자치령/섬 등)
+            "tw|대만/Taiwan/Taiwán/台湾|타이베이/Taipei/Taipéi/台北|그 외 국기들|expert|25.0330|121.5654",
+            "xk|코소보/Kosovo/Kosovo/科索沃|프리슈티나/Pristina/Pristina/普里什蒂纳|그 외 국기들|expert|42.6629|21.1655",
+            "eh|서사하라/Western Sahara/Sáhara Occidental/西撒哈拉|엘아이운/El Aaiún/El Aaiún/阿尤恩|그 외 국기들|expert|27.1536|-13.2033",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_South_Ossetia.svg&width=320|남오세티야/South Ossetia/Osetia del Sur/南奥塞梯|츠힌발리/Tskhinvali/Tjinvali/茨欣瓦利|그 외 국기들|expert|42.2274|43.9719",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Abkhazia.svg&width=320|압하스/Abkhazia/Abjasia/阿布哈兹|수후미/Sukhumi/Sujumi/苏呼米|그 외 국기들|expert|43.0033|41.0153",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Northern_Cyprus.svg&width=320|북키프로스/Northern Cyprus/Chipre del Norte/北塞浦路斯|북니코시아/North Nicosia/Nicosia del Norte/北尼科西亚|그 외 국기들|expert|35.2151|33.3619",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Transnistria.svg&width=320|트란스니스트리아/Transnistria/Transnistria/德涅斯特河沿岸|티라스폴/Tiraspol/Tiraspol/蒂拉斯波尔|그 외 국기들|expert|46.8403|29.6433",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Somaliland.svg&width=320|소말릴란드/Somaliland/Somalilandia/索马里兰|하르게이사/Hargeisa/Hargeisa/哈尔格萨|그 외 국기들|expert|9.5624|44.0770",
+            "gb-sct|스코틀랜드/Scotland/Escocia/苏格兰|에든버러/Edinburgh/Edimburgo/爱丁堡|그 외 국기들|expert|55.9533|-3.1883",
+            "gb-wls|웨일스/Wales/Gales/威尔士|카디프/Cardiff/Cardiff/加的夫|그 외 국기들|expert|51.4816|-3.1791",
+            "gb-nir|북아일랜드/Northern Ireland/Irlanda del Norte/北爱尔兰|벨파스트/Belfast/Belfast/贝尔法斯特|그 외 국기들|expert|54.5973|-5.9301",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Estelada_blava.svg&width=320|카탈루냐/Catalonia/Cataluña/加泰罗尼亚|바르셀로나/Barcelona/Barcelona/巴塞罗那|그 외 국기들|expert|41.3851|2.1734",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_the_Basque_Country.svg&width=320|바스크/Basque Country/País Vasco/巴斯克|비토리아/Vitoria/Vitoria/维多利亚|그 외 국기들|expert|42.8467|-2.6716",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Galicia.svg&width=320|갈리시아/Galicia/Galicia/加利西亚|산티아고/Santiago/Santiago/圣地亚哥|그 외 국기들|expert|42.8782|-8.5448",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Quebec.svg&width=320|퀘벡/Quebec/Quebec/魁北克|퀘벡시티/Quebec City/Ciudad de Quebec/魁北克市|그 외 국기들|expert|46.8139|-71.2080",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Corsica.svg&width=320|코르시카/Corsica/Córcega/科西嘉|아작시오/Ajaccio/Ajaccio/阿雅克肖|그 외 국기들|expert|41.9272|8.7386",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Brittany.svg&width=320|브르타뉴/Brittany/Bretaña/布列塔尼|렌/Rennes/Rennes/雷恩|그 외 국기들|expert|48.1173|-1.6778",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Alsace.svg&width=320|알자스/Alsace/Alsacia/阿尔萨斯|스트라스부르/Strasbourg/Estrasburgo/斯特라스堡|그 외 국기들|expert|48.5734|7.7521",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Flanders.svg&width=320|플랑드르/Flanders/Flandes/佛兰德|브뤼셀/Brussels/Bruselas/布鲁塞尔|그 외 국기들|expert|50.8503|4.3517",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_South_Tyrol.svg&width=320|남티롤/South Tyrol/Tirol del Sur/南蒂罗尔|볼차노/Bolzano/Bolzano/博尔扎诺|그 외 국기들|expert|46.4983|11.3548",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Veneto.svg&width=320|베네토/Veneto/Véneto/威尼托|베네치아/Venice/Venecia/威尼斯|그 외 국기들|expert|45.4408|12.3155",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Sami_flag.svg&width=320|사미/Sápmi/Sápmi/萨米|요크모크/Jokkmokk/Jokkmokk/约克莫克|그 외 국기들|expert|66.6075|19.8893",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Morning_Star_flag.svg&width=320|서파푸아/West Papua/Papúa Occidental/西巴布亚|자야푸라/Jayapura/Jayapura/查亚普拉|그 외 국기들|expert|-2.5333|140.7167",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Tibet.svg&width=320|티베트/Tibet/Tíbet/西藏|라사/Lhasa/Lhasa/拉萨|그 외 국기들|expert|29.6528|91.1721",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_East_Turkestan.svg&width=320|동투르키스탄/East Turkestan/Turquestán Oriental/东突厥斯坦|우루무치/Urumqi/Urumchi/乌鲁木齐|그 외 국기들|expert|43.8256|87.6168",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Kurdistan.svg&width=320|쿠르디스탄/Kurdistan/Kurdistán/库尔德斯坦|에르빌/Erbil/Erbil/埃尔比勒|그 외 국기들|expert|36.1901|44.0091",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Tatarstan.svg&width=320|타타르스탄/Tatarstan/Tartaristán/鞑靼斯坦|카잔/Kazan/Kazán/喀山|그 외 국기들|expert|55.7887|49.1221",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Bangsamoro.svg&width=320|방사모로/Bangsamoro/Bangsamoro/邦萨摩洛|코타바토/Cotabato/Cotabato/哥打바토|그 외 국기들|expert|7.2242|124.2467",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Free_Aceh_Movement.svg&width=320|아체/Aceh/Aceh/亚齐|반다아체/Banda Aceh/Banda Aceh/班达亚齐|그 외 국기들|expert|5.5528|95.3161",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Bougainville.svg&width=320|부건빌/Bougainville/Bougainville/布干维尔|부카/Buka/Buka/布卡|그 외 국기들|expert|-5.4243|154.6710",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Hawaii.svg&width=320|하와이/Hawaii/Hawái/夏威夷|호놀룰루/Honolulu/Honolulú/火奴鲁鲁|그 외 국기들|expert|21.3069|-157.8583",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Texas.svg&width=320|텍사스/Texas/Texas/德克萨斯|오스틴/Austin/Austin/奥斯汀|그 외 국기들|expert|30.2672|-97.7431",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_California.svg&width=320|캘리포니아/California/California/加利福尼亚|새크라멘토/Sacramento/Sacramento/萨克拉门토|그 외 국기들|expert|38.5816|-121.4944",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Wiphala.svg&width=320|아마존 원주민/Amazon Indigenous/Indígena Amazónico/亚马逊原住民|마나우스/Manaus/Manaos/玛瑙斯|그 외 국기들|expert|-3.1190|-60.0217",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_the_Karen_National_Union.svg&width=320|카렌/Karen/Karen/克伦|파안/Hpa-An/Hpa-An/帕安|그 외 국기들|expert|16.8908|97.6331",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Shan_State.svg&width=320|샨/Shan/Shan/掸|타운지/Taunggyi/Taunggyi/东枝|그 외 국기들|expert|20.7877|97.0374",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Wa_State.svg&width=320|와/Wa State/Estado Wa/佤邦|방법/Pangkham/Pangkham/邦康|그 외 국기들|expert|22.1667|99.0167",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Mon_State.svg&width=320|몬/Mon State/Estado Mon/孟邦|몰라미야인/Mawlamyine/Mawlamyine/毛淡棉|그 외 국기들|expert|16.4833|97.6333",
+            "nf|노퍽섬/Norfolk Island/Isla Norfolk/诺福克岛|킹스턴/Kingston/Kingston/金斯敦|그 외 국기들|expert|-29.0408|167.9547",
+            "gl|그린란드/Greenland/Groenlandia/格陵兰|누크/Nuuk/Nuuk/努克|그 외 국기들|expert|64.1836|-51.7216",
+            "fo|페로 제도/Faroe Islands/Islas Feroe/法罗群岛|토르스하운/Tórshavn/Tórshavn/托尔斯港|그 외 국기들|expert|62.0100|-6.7700",
+            "nc|뉴칼레도니아/New Caledonia/Nueva Caledonia/新喀里多尼亚|누메아/Nouméa/Numea/努美阿|그 외 국기들|expert|-22.2758|166.4580",
+            "hk|홍콩/Hong Kong/Hong Kong/香港|홍콩/Hong Kong/Hong Kong/香港|그 외 국기들|expert|22.3193|114.1694",
+            "mo|마카오/Macau/Macao/澳门|마카오/Macau/Macao/澳门|그 외 국기들|expert|22.1987|113.5439",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_the_Canary_Islands.svg&width=320|카나리아 제도/Canary Islands/Islas Canarias/加那利群岛|라스팔마스/Las Palmas/Las Palmas/拉斯帕尔마스|그 외 국기들|expert|28.1235|-15.4363",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Sardinia.svg&width=320|사르데냐/Sardinia/Cerdeña/撒丁岛|칼리아리/Cagliari/Cáliari/卡利亚里|그 외 국기들|expert|39.2238|9.1217",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Sicily.svg&width=320|시칠리아/Sicily/Sicilia/西西里岛|팔레르모/Palermo/Palermo/巴勒莫|그 외 국기들|expert|38.1157|13.3615",
+            "ax|올란드 제도/Åland Islands/Islas Åland/奥兰群岛|마리이함나/Mariehamn/Mariehamn/玛丽港|그 외 국기들|expert|60.0964|19.9348",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Madeira.svg&width=320|마데이라/Madeira/Madeira/马德拉|풍샬/Funchal/Funchal/丰沙尔|그 외 국기들|expert|32.6500|-16.9082",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_the_Azores.svg&width=320|아조레스/Azores/Azores/亚速尔|폰타델가다/Ponta Delgada/Ponta Delgada/蓬塔델尔加达|그 외 국기들|expert|37.7412|-25.6756",
+            "yt|마요트/Mayotte/Mayotte/马约特|마무주/Mamoudzou/Mamoudzou/马穆楚|그 외 국기들|expert|-12.7877|45.2275",
+            "re|레위니옹/Réunion/Reunión/留尼汪|생드니/Saint-Denis/Saint-Denis/圣但尼|그 외 국기들|expert|-20.8789|55.4481",
+            "mq|마르티니크/Martinique/Martinica/马提尼克|포르드프랑스/Fort-de-France/Fort-de-France/法兰西堡|그 외 국기들|expert|14.6043|-61.0821",
+            "gp|과들루프/Guadeloupe/Guadalupe/瓜德罗普|바스테르/Basse-Terre/Basse-Terre/巴斯特尔|그 외 국기들|expert|16.2650|-61.5510",
+            "pf|프랑스령 폴리네시아 (타히티)/French Polynesia (Tahiti)/Polinesia Francesa/法属波利尼西亚|파페에테/Papeete/Papeete/帕皮提|그 외 국기들|expert|-17.5350|-149.5694",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Rapa_Nui,_Chile.svg&width=320|이스터섬/Easter Island/Isla de Pascua/复活节岛|항가로아/Hanga Roa/Hanga Roa/杭加罗阿|그 외 국기들|expert|-27.1528|-109.4284",
+            "pr|푸에르토리코/Puerto Rico/Puerto Rico/波多黎各|산후안/San Juan/San Juan/圣胡安|그 외 국기들|expert|18.4655|-66.1057",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Alaska.svg&width=320|알래스카/Alaska/Alaska/阿拉斯加|주노/Juneau/Juneau/朱诺|그 외 국기들|expert|58.3019|-134.4197",
+            "cw|퀴라소/Curaçao/Curazao/库拉索|빌렘스타트/Willemstad/Willemstad/威廉斯塔德|그 외 국기들|expert|12.1165|-68.9333",
+            "sx|신트마르턴/Sint Maarten/Sint Maarten/圣马丁|필립스뷔르흐/Philipsburg/Philipsburg/菲利普斯堡|그 외 국기들|expert|18.0389|-63.0458",
+            "bq|보네르/Bonaire/Bonaire/博奈尔|크랄렌데이크/Kralendijk/Kralendijk/克拉伦代克|그 외 국기들|expert|12.1500|-68.2667",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Sint_Eustatius.svg&width=320|신트외스타티위스/Sint Eustatius/San Eustaquio/圣尤斯特歇斯|오라녜스타트/Oranjestad/Oranjestad/奥拉涅斯塔德|그 외 국기들|expert|17.4890|-62.9772",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Saba.svg&width=320|사바/Saba/Saba/萨巴|보텀/The Bottom/The Bottom/博特姆|그 외 국기들|expert|17.6293|-63.2323",
+            "aw|아루바/Aruba/Aruba/阿鲁巴|오라녜스타트/Oranjestad/Oranjestad/奥拉涅斯塔德|그 외 국기들|expert|12.5211|-70.0297",
+            "bm|버뮤다/Bermuda/Bermudas/百慕大|해밀턴/Hamilton/Hamilton/汉密尔顿|그 외 국기들|expert|32.2941|-64.7839",
+            "ky|케이맨 제도/Cayman Islands/Islas Caimán/开曼群岛|조지타운/George Town/George Town/乔治敦|그 외 국기들|expert|19.2869|-81.3744",
+            "ai|앵귈라/Anguilla/Anguila/安圭拉|더밸리/The Valley/The Valley/瓦利|그 외 국기들|expert|18.2206|-63.0518",
+            "tc|터크스 케이커스/Turks & Caicos/Turcas y Caicos/特克斯和凯科斯|코번타운/Cockburn Town/Cockburn Town/科伯恩城|그 외 국기들|expert|21.4673|-71.1312",
+            "vg|영국령 버진아일랜드/British Virgin Islands/Islas Vírgenes Británicas/英属维尔京群岛|로드타운/Road Town/Road Town/罗德城|그 외 국기들|expert|18.4285|-64.6186",
+            "vi|미국령 버진아일랜드/US Virgin Islands/Islas Vírgenes de EE.UU./美属维尔京群岛|샬롯아말리에/Charlotte Amalie/Charlotte Amalie/夏洛特阿马利亚|그 외 국기들|expert|18.3419|-64.9307",
+            "gu|괌/Guam/Guam/关岛|하갓냐/Hagåtña/Hagåtña/阿加尼亚|그 외 국기들|expert|13.4443|144.7937",
+            "mp|북마리아나 제도 (사이판)/Northern Mariana Islands/Islas Marianas del Norte/北马里亚纳群岛|사이판/Saipan/Saipán/塞班|그 외 국기들|expert|15.1833|145.7500",
+            "pn|피트케언 제도/Pitcairn Islands/Islas Pitcairn/皮特凯恩群岛|애덤스타운/Adamstown/Adamstown/亚当斯敦|그 외 국기들|expert|-25.0667|-130.1000",
+            "nu|니우에/Niue/Niue/纽埃|알로피/Alofi/Alofi/阿洛菲|그 외 국기들|expert|-19.0544|-169.9172",
+            "ck|쿡 제도/Cook Islands/Islas Cook/库克群岛|아바루아/Avarua/Avarua/阿瓦鲁阿|그 외 국기들|expert|-21.2078|-159.7750",
+            "tk|토켈라우/Tokelau/Tokelau/托克劳|누쿠노누/Nukunonu/Nukunonu/努库诺努|그 외 국기들|expert|-9.3872|-171.8252",
+            "https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/Flag_of_Tristan_da_Cunha.svg&width=320|트리스탄다쿠냐/Tristan da Cunha/Tristán de Acuña/特里斯坦-达库尼亚|에든버러/Edinburgh of the Seven Seas/Edimburgo de los Siete Mares/七海爱丁堡|그 외 국기들|expert|-37.0676|-12.3116",
+            "cc|코코스 제도/Cocos (Keeling) Islands/Islas Cocos/科科斯群岛|웨스트아일랜드/West Island/Isla Oeste/西岛|그 외 국기들|expert|-12.1642|96.8710",
+            "cx|크리스마스 섬/Christmas Island/Isla de Navidad/圣诞岛|플라잉피시코브/Flying Fish Cove/Flying Fish Cove/飞鱼湾|그 외 국기들|expert|-10.4475|105.6904"
+        ];
+
+        const countriesData = rawData.map(str => {
+            const [c, nStr, capStr, cat, d, lat, lon] = str.split('|');
+            const [nKo, nEn, nEs, nZh] = nStr.split('/');
+            const [capKo, capEn, capEs, capZh] = capStr.split('/');
+            const flagUrl = c.startsWith("http") ? c : `https://flagcdn.com/w320/${c}.png`;
+            return {
+                code: c,
+                name: { ko: nKo, en: nEn || nKo, es: nEs || nKo, zh: nZh || nKo },
+                capital: { ko: capKo, en: capEn || capKo, es: capEs || capKo, zh: capZh || capKo },
+                continent: cat,
+                diff: d || "expert",
+                flagUrl: flagUrl,
+                lat: parseFloat(lat),
+                lon: parseFloat(lon)
+            };
+        });
+
+        // 국가 데이터의 대륙명은 한국어 원본으로 저장되어 있으므로
+        // 화면에 표시할 때만 현재 언어에 맞게 변환합니다.
+        function getContinentText(continent) {
+            const map = {
+                ko: { '아시아': '아시아', '유럽': '유럽', '아프리카': '아프리카', '아메리카': '아메리카', '오세아니아': '오세아니아', '그 외 국기들': '그 외 국기들' },
+                en: { '아시아': 'Asia', '유럽': 'Europe', '아프리카': 'Africa', '아메리카': 'Americas', '오세아니아': 'Oceania', '그 외 국기들': 'Other Flags' },
+                es: { '아시아': 'Asia', '유럽': 'Europa', '아프리카': 'África', '아메리카': 'Américas', '오세아니아': 'Oceanía', '그 외 국기들': 'Otras Banderas' },
+                zh: { '아시아': '亚洲', '유럽': '欧洲', '아프리카': '非洲', '아메리카': '美洲', '오세아니아': '大洋洲', '그 외 국기들': '其他旗帜' }
+            };
+            return (map[currentLang] && map[currentLang][continent]) || continent;
+        }
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            updateUI();
+            renderCards();
+        }
+
+        function updateUI() {
+            const texts = i18n[currentLang];
+            const learningTitle = document.getElementById('ui-learning-title');
+            const learningDesc = document.getElementById('ui-learning-desc');
+            if (learningTitle) learningTitle.innerText = texts.learningTitle || learningTitle.innerText;
+            if (learningDesc) learningDesc.innerText = texts.learningDesc || learningDesc.innerText;
+            const infoTexts = [
+                ['ui-quick-title', texts.quickTitle],
+                ['ui-quick-desc', texts.quickDesc],
+                ['ui-continent-title', texts.continentTitle],
+                ['ui-continent-desc', texts.continentDesc],
+                ['ui-flagquiz-title', texts.flagQuizTitle],
+                ['ui-flagquiz-desc', texts.flagQuizDesc]
+            ];
+            infoTexts.forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el && value) el.innerText = value;
+            });
+            document.getElementById('nav-search').innerText = texts.navSearch;
+            document.getElementById('nav-quiz').innerText = texts.navQuiz;
+            document.getElementById('ui-title').innerText = texts.title;
+            document.getElementById('search-input').placeholder = texts.placeholder;
+
+            document.getElementById('ui-quiz-title').innerText = texts.quizTitle;
+            document.getElementById('ui-quiz-desc').innerText = texts.quizDesc;
+            document.getElementById('ui-diff-easy').innerText = texts.diffEasy;
+            document.getElementById('ui-diff-medium').innerText = texts.diffMedium;
+            document.getElementById('ui-diff-hard').innerText = texts.diffHard;
+            document.getElementById('ui-diff-expert').innerText = texts.diffExpert;
+            document.getElementById('ui-quiz-over').innerText = texts.quizOver;
+            document.getElementById('ui-retry-btn').innerText = texts.retryBtn;
+
+            const filterBtns = document.querySelectorAll('.filter-container .filter-btn');
+            const categories = [texts.filterAll, texts.filterAsia, texts.filterEurope, texts.filterAfrica, texts.filterAmericas, texts.filterOceania, texts.filterOther];
+            filterBtns.forEach((btn, idx) => { if(categories[idx]) btn.innerText = categories[idx]; });
+        } 
+        function switchTab(mode) {
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('search-view').style.display = 'none';
+            document.getElementById('quiz-view').style.display = 'none';
+
+            if (mode === 'search') {
+                document.getElementById('nav-search').classList.add('active');
+                document.getElementById('search-view').style.display = 'block';
+            } else if (mode === 'quiz') {
+                document.getElementById('nav-quiz').classList.add('active');
+                document.getElementById('quiz-view').style.display = 'block';
+            }
+        }
+
+        const container = document.getElementById('flag-container');
+        const searchInput = document.getElementById('search-input');
+        const statusBar = document.getElementById('status-bar');
+        let currentContinent = 'all';
+        let currentKeyword = '';
+
+        function renderCards() {
+            container.innerHTML = '';
+            const texts = i18n[currentLang];
+            const filtered = countriesData.filter(c => {
+                const matchContinent = (currentContinent === 'all') || (c.continent === currentContinent);
+                const nameStr = (c.name[currentLang] || c.name.en).toLowerCase();
+                const capitalStr = (c.capital[currentLang] || c.capital.en).toLowerCase();
+                const cleanKeyword = currentKeyword.toLowerCase();
+                return matchContinent && (nameStr.includes(cleanKeyword) || capitalStr.includes(cleanKeyword));
+            });
+
+            statusBar.innerText = `${texts.statusCount}${filtered.length}`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="no-results">🔍 No results found</div>`;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+            filtered.forEach((country) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.tabIndex = 0;
+                card.setAttribute('role', 'button');
+                card.setAttribute('aria-label', `${country.name[currentLang] || country.name.en} 정보 보기`);
+                const toggleCard = () => card.classList.toggle('flipped');
+                card.onclick = toggleCard;
+                card.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCard(); } };
+
+                const nameText = country.name[currentLang] || country.name.en;
+                const capitalText = country.capital[currentLang] || country.capital.en;
+
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front">
+                            <img src="${country.flagUrl}" alt="${nameText}" loading="lazy" decoding="async">
+                            <h3>${nameText}</h3>
+                        </div>
+                        <div class="card-back">
+                            <span class="continent-tag">${getContinentText(country.continent)}</span>
+                            <h4>${texts.capitalLabel}</h4>
+                            <div class="capital">${capitalText}</div>
+                        </div>
+                    </div>
+                `;
+                fragment.appendChild(card);
+            });
+            container.appendChild(fragment);
+        }
+
+        function filterContinent(continent, btn) {
+            currentContinent = continent;
+            document.querySelectorAll('.filter-container .filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderCards();
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            currentKeyword = e.target.value.trim();
+            renderCards();
+        });
+
+        // 퀴즈 시스템
+        let quizPool = [];
+        let currentQuestionIdx = 0;
+        let score = 0;
+        let currentTarget = null;
+        let selectedDiff = 'easy';
+
+        function startQuiz(diff) {
+            selectedDiff = diff;
+            quizPool = countriesData.filter(c => c.diff === diff);
+            if (quizPool.length < 5) quizPool = countriesData;
+            quizPool.sort(() => Math.random() - 0.5);
+            quizPool = quizPool.slice(0, 10);
+
+            currentQuestionIdx = 0;
+            score = 0;
+
+            document.getElementById('quiz-start-screen').style.display = 'none';
+            document.getElementById('quiz-game-screen').style.display = 'block';
+            document.getElementById('quiz-result-screen').style.display = 'none';
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const texts = i18n[currentLang];
+            document.getElementById('quiz-feedback').innerText = '';
+            document.getElementById('quiz-next-btn').style.display = 'none';
+
+            currentTarget = quizPool[currentQuestionIdx];
+            document.getElementById('quiz-count-tag').innerText = `${texts.question}${currentQuestionIdx + 1}/10`;
+            document.getElementById('quiz-score-tag').innerText = `${texts.score}${score}`;
+            document.getElementById('quiz-progress-bar').style.width = `${((currentQuestionIdx) / 10) * 100}%`;
+            document.getElementById('quiz-flag-img').src = currentTarget.flagUrl;
+
+            let distractors = countriesData.filter(c => c.code !== currentTarget.code);
+            distractors.sort(() => Math.random() - 0.5);
+            distractors = distractors.slice(0, 3);
+
+            const options = [currentTarget, ...distractors].sort(() => Math.random() - 0.5);
+
+            const optionBtns = document.querySelectorAll('.option-btn');
+            optionBtns.forEach((btn, idx) => {
+                btn.innerText = options[idx].name[currentLang] || options[idx].name.en;
+                btn.className = 'option-btn';
+                btn.disabled = false;
+                btn.dataset.correct = (options[idx].code === currentTarget.code);
+            });
+        }
+
+        function checkAnswer(chosenIdx) {
+            const texts = i18n[currentLang];
+            const optionBtns = document.querySelectorAll('.option-btn');
+            optionBtns.forEach(btn => btn.disabled = true);
+
+            const chosenBtn = optionBtns[chosenIdx];
+            const isCorrect = chosenBtn.dataset.correct === "true";
+
+            if (isCorrect) {
+                chosenBtn.classList.add('correct');
+                score += 10;
+                document.getElementById('quiz-feedback').innerHTML = `<span style="color:#10b981;">${texts.correct}</span>`;
+            } else {
+                chosenBtn.classList.add('wrong');
+                optionBtns.forEach(btn => { if(btn.dataset.correct === "true") btn.classList.add('correct'); });
+                const correctName = currentTarget.name[currentLang] || currentTarget.name.en;
+                document.getElementById('quiz-feedback').innerHTML = `<span style="color:#ef4444;">${texts.wrong}${correctName}</span>`;
+            }
+
+            document.getElementById('quiz-score-tag').innerText = `${texts.score}${score}`;
+            document.getElementById('quiz-next-btn').innerText = texts.nextBtn;
+            document.getElementById('quiz-next-btn').style.display = 'inline-block';
+        }
+
+        function nextQuestion() {
+            currentQuestionIdx++;
+            if (currentQuestionIdx >= 10 || currentQuestionIdx >= quizPool.length) {
+                showQuizResult();
+            } else {
+                loadQuestion();
+            }
+        }
+
+        function showQuizResult() {
+            const texts = i18n[currentLang];
+            document.getElementById('quiz-game-screen').style.display = 'none';
+            document.getElementById('quiz-result-screen').style.display = 'block';
+            document.getElementById('quiz-final-score').innerText = `${texts.score}${score} / 100`;
+        }
+
+        function resetQuiz() {
+            document.getElementById('quiz-start-screen').style.display = 'block';
+            document.getElementById('quiz-game-screen').style.display = 'none';
+            document.getElementById('quiz-result-screen').style.display = 'none';
+        }
+
+        // 초기 실행
+        updateUI();
+        renderCards();
+    </script>
+</body>
+</html>
